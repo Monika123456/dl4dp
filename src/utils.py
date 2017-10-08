@@ -8,35 +8,44 @@ import random
 from collections import Counter, OrderedDict, namedtuple, defaultdict
 from functools import total_ordering
 
+# Priradenie 0-10
 ID, FORM, LEMMA, UPOS, XPOS, FEATS, HEAD, DEPREL, DEPS, MISC = range(10)
 
 EMPTY = 0
 MULTIWORD = 1
 
 FIELD_TO_STR = ["id", "form", "lemma", "upos", "xpos", "feats", "head", "deprel", "deps", "misc"]
+# Vytvorenie dvojic premenna:id premennej
 STR_TO_FIELD = {k : v for v, k in enumerate(FIELD_TO_STR)}
 
 def isempty(token):
+    # Ak je 'token' typu 'list'
     if isinstance(token, list):
         token = token[ID]
+    # Ak je 'token' typu 'tuple', vrat ci je 'token[2]' == 0 (pozn. inicializovane EMPTY = 0), inak false
     return token[2] == EMPTY if isinstance(token, tuple) else False
 
 def ismultiword(token):
     if isinstance(token, list):
         token = token[ID]
+    # Ak je 'token' typu 'tuple', vrat ci je 'token[2]' == 1 (pozn. inicializovane MULTIWORD = 1), inak false
     return token[2] == MULTIWORD if isinstance(token, tuple) else False
     
 def normalize_lower(field, value):
+    # Ak je 'value' FORM, t.j. slovo, vo 'value' zmeni velke pismena na male
     return value.lower() if field == FORM else value
 
 _NUM_REGEX = re.compile("[0-9]+|[0-9]+\\.[0-9]+|[0-9]+[0-9,]+")
 NUM_FORM = u"__number__"
 
 def normalize_default(field, value):
+    # Ak 'value' nie je 'FORM', t.j. slovo
     if field != FORM:
         return value
+    # Porovnanie s 'value' ci obsahuje znaky/symboly/cisla
     if _NUM_REGEX.match(value):
         return NUM_FORM
+    # Zmeni velke pismena na male
     value = value.lower()
     return value
 
@@ -46,8 +55,10 @@ def read_conllu(filename, skip_empty=True, skip_multiword=True, parse_feats=Fals
         sentence = []
         for line in lines:
             token = _parse_token(line)
+            # Preskoci prazdny token
             if skip_empty and isempty(token):
                 continue
+            # Preskoci viacslovne slovo
             if skip_multiword and ismultiword(token):
                 continue
             sentence.append(token)
@@ -56,16 +67,22 @@ def read_conllu(filename, skip_empty=True, skip_multiword=True, parse_feats=Fals
     def _parse_token(line):
         fields = line.split("\t")
 
+        # Ak je v 'ID' bodka
         if "." in fields[ID]:
+            # Vytvori trojicu (cast pred bodkou, cast za bodkou, 0), pozn. inicializovane EMPTY = 0 
             token_id, index = fields[ID].split(".")
             id = (int(token_id), int(index), EMPTY)
+        # Ak je v 'ID' pomlcka
         elif "-" in fields[ID]:
+            # Vytvori trojicu (cast pred pomlckou, cast za pomlckou, 1), pozn. inicializovane MULTIWORD = 1 
             start, end = fields[ID].split("-")
             id = (int(start), int(end), MULTIWORD)
         else:
+            # V ostatnych pripadoch ponecha povodne ID
             id = int(fields[ID])
         fields[ID] = id
 
+        # V kazdom ... nahradi znak "_" symbolom 'None'
         for f in [LEMMA, UPOS, XPOS, FEATS, HEAD, DEPREL, DEPS, MISC]:
             if fields[f] == "_":
                 fields[f] = None
@@ -85,6 +102,7 @@ def read_conllu(filename, skip_empty=True, skip_multiword=True, parse_feats=Fals
         
         return fields
 
+    ''' Z retazca vyberie jednotlive vlastnosti, ktore ulozi do OrderedDict (kluc, hodnota)'''
     def _parse_feats(str):
         feats = OrderedDict()
         for key, value in [feat.split("=") for feat in str.split("|")]:
@@ -99,7 +117,9 @@ def read_conllu(filename, skip_empty=True, skip_multiword=True, parse_feats=Fals
     lines = []
     with codecs.open(filename, "r", "utf-8") as fp:
         for line in fp:
+            # Oddeli riadky
             line = line.rstrip("\r\n")
+            # Preskoci komentare 
             if line.startswith("#"):
                 continue
             if not line:
