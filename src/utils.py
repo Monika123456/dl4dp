@@ -51,6 +51,7 @@ def normalize_default(field, value):
 
 def read_conllu(filename, skip_empty=True, skip_multiword=True, parse_feats=False, parse_deps=False, normalize=normalize_default):
 
+    ''' Vrati pole tokenov bez bielych znakov, odstrani viacslovne tokeny '''
     def _parse_sentence(lines):
         sentence = []
         for line in lines:
@@ -64,6 +65,7 @@ def read_conllu(filename, skip_empty=True, skip_multiword=True, parse_feats=Fals
             sentence.append(token)
         return sentence
 
+    ''' Vrati  '''
     def _parse_token(line):
         fields = line.split("\t")
 
