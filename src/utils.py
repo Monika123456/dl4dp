@@ -156,6 +156,7 @@ def create_dictionary(sentences, fields={FORM, LEMMA, UPOS, XPOS, FEATS, DEPREL}
 
 def create_index(dic, min_frequency=1):
     for f, c in dic.items():
+        # Zoradi 'c' podla poctu vyskytov (od najcastejsie sa vyskytujuce po menej)
         ordered = c.most_common()
         min_fq = min_frequency[f] if isinstance(min_frequency, (list, tuple, dict)) else min_frequency
         for i, (s, fq) in enumerate(ordered):
@@ -176,6 +177,7 @@ def write_index(basename, index, fields={FORM, UPOS, FEATS, DEPREL}):
     index = create_inverse_index(index)
     for f in fields:
         c = index[f]
+        # Otvori subory pre zapis
         with codecs.open(INDEX_FILENAME.format(basename, FIELD_TO_STR[f]), "w", "utf-8") as fp:
             for i in range(1, len(c) + 1):
                 token = c[i]
@@ -187,9 +189,11 @@ def read_index(basename, fields={FORM, UPOS, FEATS, DEPREL}):
     index = {}
     for f in fields:
         index[f] = Counter()
+        # Otvori subory na citanie
         with codecs.open(INDEX_FILENAME.format(basename, FIELD_TO_STR[f]), "r", "utf-8") as fp:
             i = 1
             for line in fp:
+                # Odstrani prazdne znaky sprava
                 token = line.rstrip("\r\n")
                 if token == _NONE_TOKEN:
                     token = None
@@ -205,14 +209,17 @@ class DepTree(namedtuple("DepTree", "feats, heads, labels")):
                 np.full(num_tokens, -1, dtype=np.int),
                 np.full(num_tokens, -1, dtype=np.int))
 
+    ''' Vrati dlzku svojho predka '''
     def __len__(self):
         return len(self.heads)
 
+''' Vrati strom vytvoreny zo 'sentence' '''
 def map_to_instance(sentence, index, fields=(FORM, UPOS, FEATS)):
-    num_tokens = len(sentence)
-    num_feats = len(fields)
+    num_tokens = len(sentence) # dlzka vety
+    num_feats = len(fields) # dlzka poli
     tree = DepTree(num_tokens, num_feats)
 
+    # Stromu nastavi feats, heads, labels podla sentence
     for i, token in enumerate(sentence):
         for j, f in enumerate(fields):
             tree.feats[i][j] = index[f][token[f]]
@@ -221,10 +228,12 @@ def map_to_instance(sentence, index, fields=(FORM, UPOS, FEATS)):
 
     return tree
 
+''' Pre kazdu 'sentence' vrati strom '''
 def map_to_instances(sentences, index, fields=(FORM, UPOS, FEATS)):
     for sentence in sentences:
         yield map_to_instance(sentence, index, fields)
 
+''' Vrati nahodne data z 'data' '''
 def shuffled_stream(data):
     while True:
         random.shuffle(data)
