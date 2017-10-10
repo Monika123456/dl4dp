@@ -18,6 +18,7 @@ FIELD_TO_STR = ["id", "form", "lemma", "upos", "xpos", "feats", "head", "deprel"
 # Vytvorenie dvojic premenna:id premennej
 STR_TO_FIELD = {k : v for v, k in enumerate(FIELD_TO_STR)}
 
+''' Vrati, ci je token prazdny '''
 def isempty(token):
     # Ak je 'token' typu 'list'
     if isinstance(token, list):
