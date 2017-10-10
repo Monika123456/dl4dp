@@ -26,12 +26,14 @@ def isempty(token):
     # Ak je 'token' typu 'tuple', vrat ci je 'token[2]' == 0 (pozn. inicializovane EMPTY = 0), inak false
     return token[2] == EMPTY if isinstance(token, tuple) else False
 
+''' Vrati, ci je token viacslovny '''
 def ismultiword(token):
     if isinstance(token, list):
         token = token[ID]
     # Ak je 'token' typu 'tuple', vrat ci je 'token[2]' == 1 (pozn. inicializovane MULTIWORD = 1), inak false
     return token[2] == MULTIWORD if isinstance(token, tuple) else False
     
+''' Zmeni velke pismena na male vo 'FORM' '''
 def normalize_lower(field, value):
     # Ak je 'value' FORM, t.j. slovo, vo 'value' zmeni velke pismena na male
     return value.lower() if field == FORM else value
@@ -39,6 +41,10 @@ def normalize_lower(field, value):
 _NUM_REGEX = re.compile("[0-9]+|[0-9]+\\.[0-9]+|[0-9]+[0-9,]+")
 NUM_FORM = u"__number__"
 
+''' Ak je field FORM, zmeni velke pismena na male,
+    ak je field cislo, vrati, ze je to cislo,
+    inak vrati povodnu hodnotu value.
+'''
 def normalize_default(field, value):
     # Ak 'value' nie je 'FORM', t.j. slovo
     if field != FORM:
@@ -105,6 +111,7 @@ def read_conllu(filename, skip_empty=True, skip_multiword=True, parse_feats=Fals
         if fields[HEAD]:
             fields[HEAD] = int(fields[HEAD])
 
+        # Ak existuje DEPS, vlozi sparsovane DEPS do fields[DEPS]
         if parse_deps and fields[DEPS]:
             fields[DEPS] = _parse_deps(fields[DEPS])
 
@@ -124,6 +131,7 @@ def read_conllu(filename, skip_empty=True, skip_multiword=True, parse_feats=Fals
             feats[key] = value
         return feats
 
+    ''' Vrati list vlastnosti deps zo stringu oddelenych znakmi ":" a "|" '''
     def _parse_deps(str):
         return list(map(lambda rel: (int(rel[0]), rel[1]), [rel.split(":") for rel in str.split("|")]))
 
@@ -137,11 +145,12 @@ def read_conllu(filename, skip_empty=True, skip_multiword=True, parse_feats=Fals
             if line.startswith("#"):
                 continue
             if not line:
+                # Ak nie je riadok, ale dlzka vsetkych riadkov !=0, sparsuje lines pomocou funkcie _parse_sentence
                 if len(lines) != 0:
                     yield _parse_sentence(lines)
                     lines = []
                 continue
-            # Pole riadkov bez komentarov, ...
+            # Prida do pola riadkov bez komentarov, ...
             lines.append(line)
         if len(lines) != 0:
             yield _parse_sentence(lines)
