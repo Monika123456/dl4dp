@@ -65,7 +65,14 @@ def read_conllu(filename, skip_empty=True, skip_multiword=True, parse_feats=Fals
             sentence.append(token)
         return sentence
 
-    ''' Vrati  '''
+    ''' Vrati  sparsovany line:
+        - skontroluje ID a zmeni ho na integer,
+        - zmeni znak '_' na 'None', 
+        - rozparsuje jednotlive FEATS,
+        - rodica zmeni na integer, 
+        - DEPS
+        - znormalizuje FORM a LEMMA (lowcase, ...).
+    '''
     def _parse_token(line):
         fields = line.split("\t")
 
@@ -89,15 +96,18 @@ def read_conllu(filename, skip_empty=True, skip_multiword=True, parse_feats=Fals
             if fields[f] == "_":
                 fields[f] = None
 
+        # Ak True, zmeni FEATS v fields na OrderedDict(kluc, hodnota) vlastnosti FEATS        
         if parse_feats and fields[FEATS]:
             fields[FEATS] = _parse_feats(fields[FEATS])
 
+        # AK existuje predok tokenu, zmeni jeho typ zo string na integer
         if fields[HEAD]:
             fields[HEAD] = int(fields[HEAD])
 
         if parse_deps and fields[DEPS]:
             fields[DEPS] = _parse_deps(fields[DEPS])
 
+        # Znormalizuje podla def normalize_default FORM a LEMMA v 'line'
         if normalize:
             for f in [FORM, LEMMA]:
                 fields[f] = normalize(f, fields[f])
@@ -117,6 +127,7 @@ def read_conllu(filename, skip_empty=True, skip_multiword=True, parse_feats=Fals
         return list(map(lambda rel: (int(rel[0]), rel[1]), [rel.split(":") for rel in str.split("|")]))
 
     lines = []
+    # Citanie zo suboru
     with codecs.open(filename, "r", "utf-8") as fp:
         for line in fp:
             # Oddeli riadky
@@ -129,6 +140,7 @@ def read_conllu(filename, skip_empty=True, skip_multiword=True, parse_feats=Fals
                     yield _parse_sentence(lines)
                     lines = []
                 continue
+            # Pole riadkov bez komentarov, ...
             lines.append(line)
         if len(lines) != 0:
             yield _parse_sentence(lines)
