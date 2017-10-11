@@ -155,6 +155,7 @@ def read_conllu(filename, skip_empty=True, skip_multiword=True, parse_feats=Fals
         if len(lines) != 0:
             yield _parse_sentence(lines)
 
+''' Vrati dvojicu field:Counter, kde pre vsetky sentences spocita, kolko sa v nich jednotlivych fields '''
 def create_dictionary(sentences, fields={FORM, LEMMA, UPOS, XPOS, FEATS, DEPREL}):
     dic = {f: Counter() for f in fields}
     for sentence in sentences:
@@ -164,9 +165,10 @@ def create_dictionary(sentences, fields={FORM, LEMMA, UPOS, XPOS, FEATS, DEPREL}
                 dic[f][s] += 1
     return dic
 
+''' Vrati dvojicu field:Counter, kde zmeni frekvenciu vyskytov fieldov na minimalnu frekvenciu = 1 '''
 def create_index(dic, min_frequency=1):
     for f, c in dic.items():
-        # Zoradi 'c' podla poctu vyskytov (od najcastejsie sa vyskytujuce po menej)
+        # Zoradi 'c' (Counter) podla poctu vyskytov (od najcastejsie sa vyskytujuce po menej)
         ordered = c.most_common()
         min_fq = min_frequency[f] if isinstance(min_frequency, (list, tuple, dict)) else min_frequency
         for i, (s, fq) in enumerate(ordered):
@@ -176,6 +178,7 @@ def create_index(dic, min_frequency=1):
                 del c[s]
     return dic
 
+''' Vrati dvojicu field:dic, kde dic je dvojica pocetVyskytov:slovoTokena '''
 def create_inverse_index(index):
     return {f: {v: k for k, v in c.items()} for f, c in index.items()}
 
@@ -183,6 +186,7 @@ INDEX_FILENAME = "{0}_{1}_index.txt"
 
 _NONE_TOKEN = u"__none__"
 
+''' Pre kazdy token, ktory = None, prepise hodnotu na _NONE_TOKEN, vsetky tokeny zapise do suboru '''
 def write_index(basename, index, fields={FORM, UPOS, FEATS, DEPREL}):
     index = create_inverse_index(index)
     for f in fields:
@@ -195,8 +199,15 @@ def write_index(basename, index, fields={FORM, UPOS, FEATS, DEPREL}):
                     token = _NONE_TOKEN
                 print(token, file=fp)
 
+''' Vrati dvojicu field:Counter(token), kde:
+    - zo suboru cita riadky, 
+    - odstrani prazdne znaky sprava,
+    - ak sa v token nachadza _NONE_TOKEN, zmeni ho na None,
+    - zmeni hodnotu Counter na poradove cislo riadka, v ktorom sa token nachadzal v subore
+'''
 def read_index(basename, fields={FORM, UPOS, FEATS, DEPREL}):
     index = {}
+    # Vytvori Counter pre fields
     for f in fields:
         index[f] = Counter()
         # Otvori subory na citanie
